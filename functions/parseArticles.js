@@ -1,7 +1,7 @@
 const fs = require("fs");
 
-async function parseArticles(file) {
-  const rawData = fs.readFileSync(file);
+async function parseArticles(fileName, parseFileName) {
+  const rawData = fs.readFileSync(fileName);
   const messages = JSON.parse(rawData);
 
   const parsedArticles = [];
@@ -29,10 +29,7 @@ async function parseArticles(file) {
     }
   });
 
-  fs.writeFileSync(
-    "parsed_articles.json",
-    JSON.stringify(parsedArticles, null, 2)
-  );
+  fs.writeFileSync(parseFileName, JSON.stringify(parsedArticles, null, 2));
   console.log("Articles parsed and saved to parsed_articles.json");
 }
 

@@ -1,9 +1,7 @@
 const { Api } = require("telegram/tl");
 const fs = require("fs");
 
-const fileName = "output.json";
-
-async function fetchMessages(client, channelUsername) {
+async function fetchMessages(client, channelUsername, fileName) {
   try {
     // Get the channel entity
     const channel = await client.getEntity(channelUsername);

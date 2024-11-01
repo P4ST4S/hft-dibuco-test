@@ -13,7 +13,10 @@ const stringSession = new StringSession(""); // Using in-memory session
 
 // Channel username (e.g., @nytimes)
 const channelUsername = "@nytimes";
-const fileName = "output.json";
+
+// Output file names
+const fileName = "out/output.json";
+const parseFileName = "out/parsed_articles.json";
 
 (async () => {
   const client = new TelegramClient(stringSession, apiId, apiHash, {
@@ -31,9 +34,9 @@ const fileName = "output.json";
   console.log("You're connected!");
 
   // Fetch messages from the channel
-  await fetchMessages(client, channelUsername);
+  await fetchMessages(client, channelUsername, fileName);
 
-  await parseArticles(fileName);
+  await parseArticles(fileName, parseFileName);
 
   await client.disconnect();
 })();

@@ -11,7 +11,6 @@ async function fetchMessages(client, channelUsername, fileName) {
       new Api.messages.GetHistory({
         peer: channel,
         limit: 10, // Number of messages to fetch
-        offsetDate: null,
         offsetId: 0,
         maxId: 0,
         minId: 0,

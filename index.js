@@ -12,6 +12,7 @@ const stringSession = new StringSession(""); // Using in-memory session
 
 // Channel username (e.g., @nytimes)
 const channelUsername = "@nytimes";
+const fileName = "output.json";
 
 async function fetchMessages(client, channelUsername) {
   try {
@@ -38,6 +39,7 @@ async function fetchMessages(client, channelUsername) {
     for (const message of history.messages) {
       if (message.message) {
         let mediaInfo = null;
+        let urls = [];
 
         // Handle media types if any
         if (message.media) {
@@ -57,6 +59,15 @@ async function fetchMessages(client, channelUsername) {
           }
         }
 
+        // Extract URLs from entities if available
+        if (message.entities) {
+          for (const entity of message.entities) {
+            if (entity instanceof Api.MessageEntityTextUrl) {
+              urls.push(entity.url); // Add each URL found to the urls array
+            }
+          }
+        }
+
         // Append message details
         messages.push({
           id: message.id,
@@ -64,16 +75,53 @@ async function fetchMessages(client, channelUsername) {
           message: message.message,
           media: mediaInfo,
           sender_id: message.fromId ? message.fromId.userId : null,
+          urls: urls, // Store all URLs found in this message
         });
       }
     }
 
     // Log or process the messages (you could save to JSON or database here)
-    fs.writeFileSync("output.json", JSON.stringify(messages, null, 2));
+    fs.writeFileSync(fileName, JSON.stringify(messages, null, 2));
     console.log("Messages fetched and saved to output.json file.");
   } catch (error) {
     console.error("Error fetching messages:", error);
   }
+}
+
+async function parsedArticles(file) {
+  const rawData = fs.readFileSync(file);
+  const messages = JSON.parse(rawData);
+
+  const parsedArticles = [];
+
+  messages.forEach((msg) => {
+    const lines = msg.message.split("\n").filter((line) => line.trim() !== "");
+    let articleIndex = 0;
+
+    // Loop through lines to parse titles and bodies
+    for (let i = 1; i < lines.length; i += 2) {
+      const title = lines[i];
+      const body = lines[i + 1] || ""; // Sometimes the body might not be available
+
+      const article = {
+        id: msg.id,
+        date: msg.date,
+        title: title,
+        body: body,
+        url: msg.urls[articleIndex] || null, // Match URL based on article index
+        media: msg.media,
+      };
+
+      parsedArticles.push(article);
+      articleIndex++;
+    }
+  });
+
+  fs.writeFileSync(
+    "parsed_articles.json",
+    JSON.stringify(parsedArticles, null, 2)
+  );
+  console.log("Articles parsed and saved to parsed_articles.json");
 }
 
 (async () => {
@@ -89,13 +137,12 @@ async function fetchMessages(client, channelUsername) {
     onError: (err) => console.log(err),
   });
 
-  const channelName =
-    "@" + (await input.text("Please enter the channel name (without '@'): "));
-
   console.log("You're connected!");
 
   // Fetch messages from the channel
-  await fetchMessages(client, channelName);
+  await fetchMessages(client, channelUsername);
 
   await client.disconnect();
+
+  parsedArticles(fileName);
 })();

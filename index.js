@@ -9,7 +9,13 @@ const parseArticles = require("./functions/parseArticles");
 // Load API credentials from .env file
 const apiId = parseInt(process.env.TELEGRAM_API_ID); // Your api_id
 const apiHash = process.env.TELEGRAM_API_HASH; // Your api_hash
-const stringSession = new StringSession(""); // Using in-memory session
+
+// Create a new StringSession or use an existing one
+// const stringSession = new StringSession(""); // Using in-memory session
+
+// Connect to a session
+const sessionString = require("fs").readFileSync("session.txt", "utf8");
+const stringSession = new StringSession(sessionString);
 
 // Channel username (e.g., @nytimes)
 const channelUsername = "@nytimes";
@@ -23,20 +29,35 @@ const parseFileName = "out/parsed_articles.json";
     connectionRetries: 5,
   });
 
-  await client.start({
-    phoneNumber: async () => await input.text("Please enter your number: "),
-    password: async () => await input.text("Please enter your password: "),
-    phoneCode: async () =>
-      await input.text("Please enter the code you received: "),
-    onError: (err) => console.log(err),
-  });
+  try {
+    // await client.start({
+    //   phoneNumber: async () => await input.text("Please enter your number: "),
+    //   password: async () => await input.text("Please enter your password: "),
+    //   phoneCode: async () =>
+    //     await input.text("Please enter the code you received: "),
+    //   onError: (err) => console.log(err),
+    // });
 
-  console.log("You're connected!");
+    // console.log("You are now connected!");
+    // console.log("Your session string:", client.session.save()); // Save this string
 
-  // Fetch messages from the channel
-  await fetchMessages(client, channelUsername, fileName);
+    // // Optional: Save the string to a file for future use
+    // require("fs").writeFileSync("session.txt", client.session.save());
 
-  await parseArticles(fileName, parseFileName);
+    // If session is already connected, load the session
+    await client.connect();
 
-  await client.disconnect();
+    // Fetch messages
+    await fetchMessages(client, channelUsername, fileName);
+    await parseArticles(fileName, parseFileName);
+  } catch (error) {
+    if (error.message.includes("TIMEOUT")) {
+      console.log("Connection timed out. Retrying...");
+      // Retry logic here
+    } else {
+      console.error("An error occurred:", error);
+    }
+  } finally {
+    await client.disconnect();
+  }
 })();
